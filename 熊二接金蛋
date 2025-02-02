@@ -1,0 +1,98 @@
+import pygame
+import random
+import sys
+
+screen = pygame.display.set_mode((800,600)) #宽800， 高600的窗口
+screen_width = 800
+screen_height = 600
+score = 0 #用于计分
+
+font = pygame.font.SysFont(None, 36) 
+
+pygame.display.set_caption('熊二接金蛋')  #标题
+character_image = pygame.image.load('dist/output_image.png').convert_alpha()  #加载人物图片
+character_image = pygame.transform.scale(character_image, (80,60)) #改变人物尺寸
+character_x = (screen_width - character_image.get_width()) // 2 #位置
+character_y = screen_height - character_image.get_height()
+
+egg_image = pygame.image.load('dist/output_image4.png').convert_alpha()  #@加载鸡蛋图片
+egg_image = pygame.transform.scale(egg_image, (80,60))
+
+class Egg: #鸡蛋类
+    def __init__(self):
+        self.x = random.randint(0,screen_width)  #使随机出现在屏幕上方
+         self.y = 0
+        self.speed_y = 2  #蛋速
+        self.alive = True  #用于碰撞消失
+    def update(self): #两种状态的运作方式
+        if self.alive:
+            self.y += self.speed_y
+            if self.y > screen_height:
+                self.alive = False
+    def draw(self, screen): #画鸡蛋，并更新位置
+        if self.alive:
+            screen.blit(egg_image, (self.x, self.y))
+
+    def check_collision(self, character_x, character_y): #碰撞函数
+        if self.alive:
+            egg_rect = pygame.Rect(self.x, self.y, egg_image.get_width(), egg_image.get_height())
+            character_rect = pygame.Rect(character_x, character_y, character_image.get_width(),
+                                         character_image.get_height())
+            if egg_rect.colliderect(character_rect):
+                self.alive = False
+                return True
+        return False
+
+
+#创建鸡蛋列表
+eggs = []
+
+EGG_SPAWN_EVENT = pygame.USEREVENT + 1 #新增事件，用于扩充鸡蛋
+
+#定时器
+pygame.time.set_timer(EGG_SPAWN_EVENT, 2000)
+
+#人物速度
+character_speed = 1
+
+running = True
+
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == EGG_SPAWN_EVENT:
+            eggs.append(Egg())
+    #更新敌人位置
+    for egg in eggs:
+        egg.update()
+        if egg.check_collision(character_x, character_y):
+            score += 1
+ # 在屏幕左上角显示分数
+    # 渲染计分板
+
+
+    eggs = [egg for egg in eggs if  egg.alive]
+    background_image = pygame.image.load('dist/R-C.jpg').convert()
+    background_image = pygame.transform.scale(background_image, (800,600)) #背景
+    screen.blit(background_image, (0, 0))
+    screen.blit(character_image, (character_x, character_y))
+    score_text = font.render(str(score), True, (255, 255, 255))
+    screen.blit(score_text, (10, 10))
+    for egg in eggs:
+        egg.draw(screen) #循环内部画鸡蛋
+    pygame.display.flip() #更新整个屏幕
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT]:
+        character_x -= character_speed
+    if keys[pygame.K_RIGHT]:
+        character_x += character_speed
+    if character_x < 0 or character_x >= screen_width:  #键盘事件
+        character_x = 0
+        # 渲染计分板
+    #控制
+    pygame.time.Clock().tick(60)
+
+
+pygame.quit()
+sys.exit()
